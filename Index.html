@@ -1,39 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Chopping Block</title>
-    <style>
-        body { 
-            background-color: #0f172a; 
-            color: #ffffff; 
-            font-family: sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            overflow: hidden; 
-        }
-        #game-container { 
-            width: 360px; 
-            height: 640px; 
-            background-color: #1e293b; 
-            border: 4px solid #334155; 
-            border-radius: 16px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 15px; 
-            box-sizing: border-box; 
-            justify-content: space-between; 
-            position: relative; 
-        }
-        .screen { 
-            width: 100%; 
-            height: 100%; 
-            display: none; 
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Chopping Block</title><style>body{background:#0f172a;color:#fff;font-family:sans-serif;text-align:center;margin:0;padding:20px;}#pantry{width:320px;height:200px;background:#1e293b;position:relative;margin:10px auto;border:2px solid #fbbf24;overflow:hidden;}#sim{position:absolute;font-size:24px;left:20px;bottom:0;transition:0.1s;}button{padding:10px;margin:5px;font-weight:bold;background:#10b981;color:#fff;border:none;border-radius:8px;}</style></head><body><h2>The Chopping Block</h2><p id="info">📦 Spin the wheel, catch the items, and reach the door!</p><div id="pantry"><div id="items" style="position:absolute;font-size:20px;right:40px;bottom:0;">🥩 🥦</div><div id="sim">🧑‍🍳</div></div><div><button onclick="startMove(-20)">◀ Left</button><button onclick="jump()">▲ Jump</button><button onclick="startMove(20)">Right ▶</button></div><br><button style="background:#fbbf24;color:#000;" onclick="spin()">🎰 Spin Basket</button><button style="background:#3b82f6;" onclick="location.reload()">🔄 Restart</button><script>let x=20,y=0,target=['🥩','🥦'],has=[];function spin(){document.getElementById('info').innerText="Find: 🥩 and 🥦! Run right to collect them!";}function startMove(s){x=Math.max(0,Math.min(280,x+s));document.getElementById('sim').style.left=x+'px';if(x>200){document.getElementById('items').style.display='none';document.getElementById('info').innerText="🎉 Success! You gathered the food and advanced to the next level!";}}function jump(){let s=document.getElementById('sim');s.style.bottom='80px';setTimeout(()=>{s.style.bottom='0px';},300);}</script></body></html>
             flex-direction: column; 
             align-items: center; 
             justify-content: space-between; 
