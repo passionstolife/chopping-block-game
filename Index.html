@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Chopping Block</title>
+    <style>
+        body { 
+            background-color: #0f172a; 
+            color: #ffffff; 
+            font-family: sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden; 
+        }
+        #game-container { 
+            width: 360px; 
+            height: 640px; 
+            background-color: #1e293b; 
+            border: 4px solid #334155; 
+            border-radius: 16px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 15px; 
+            box-sizing: border-box; 
+            justify-content: space-between; 
+            position: relative; 
+        }
+        .screen { 
+            width: 100%; 
+            height: 100%; 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: space-between; 
+            text-align: center; 
+        }
+        .active { 
+            display: flex; 
+        }
+        .title { 
+            font-size: 24px; 
+            font-weight: bold; 
+            color: #fbbf24; 
+            margin-top: 10px; 
+        }
+        .instructions { 
+            font-size: 13px; 
+            color: #94a3b8; 
+            background: rgba(0,0,0,0.4); 
+            padding: 8px; 
+            border-radius: 8px; 
+            width: 90%; 
+        }
+        .btn { 
+            background-color: #10b981; 
+            color: #ffffff; 
+            border: none; 
+            padding: 12px 24px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            box-shadow: 0 4px #047857; 
+            margin: 5px; 
+        }
+        .btn:active { 
+            transform: translateY(2px); 
+            box-shadow: 0 2px #047857; 
+        }
+        #avatar-preview { 
+            font-size: 80px; 
+            margin: 10px; 
+        }
+        #wheel-display { 
+            font-size: 60px; 
+            margin: 20px; 
+        }
+        .basket-box { 
+            display: flex; 
+            gap: 10px; 
+            font-size: 32px; 
+            background: #0f172a; 
+            padding: 10px; 
+            border-radius: 8px; 
+        }
+        #stage-canvas { 
+            width: 100%; 
+            height: 300px; 
+            background-color: #38bdf8; 
+            position: relative; 
+            border: 2px solid #0284c7; 
+            overflow: hidden; 
+            border-radius: 8px; 
+        }
+        #player-sim { 
+            position: absolute; 
+            font-size: 32px; 
+            width: 32px; 
+            height: 32px; 
+            z-index: 10; 
+            transform: scaleX(1); 
+        }
+        .platform { 
+            position: absolute; 
+            background-color: #b45309; 
+            border-top: 4px solid #d97706; 
+            height: 15px; 
+            border-radius: 2px; 
+        }
+        .pantry-item { 
+            position: absolute; 
+            font-size: 24px; 
+            z-index: 5; 
+            width: 24px; 
+            height: 24px; 
+        }
+        #kitchen-door { 
+            position: absolute; 
+            font-size: 36px; 
+            bottom: 0px; 
+            right: 10px; 
+            z-index: 4; 
+        }
+        .controls { 
+            display: grid; 
+            grid-template-columns: repeat(3, 60px); 
+            gap: 10px; 
+            margin-bottom: 5px; 
+        }
+        .ctrl-btn { 
+            background: #334155; 
+            color: white; 
+            border: 2px solid #fbbf24; 
+            font-size: 24px; 
+            border-radius: 50%; 
+            height: 55px; 
+            width: 55px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+        }
+        .ctrl-btn:active { 
+            background: #fbbf24; 
+            color: #000000; 
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        
+        <!-- PHASE 1: AVATAR CUSTOMIZATION -->
+        <div id="screen-custom" class="screen active">
+            <div class="title">The Chopping Block</div>
+            <div class="instructions">📋 <b>CHEF CHALLENGE:</b> Run and Jump to collect floating ingredients! Once you have all 4 items, run into the 🚪 Kitchen Door on the right side to escape before time runs out!</div>
+            <div id="avatar-preview">🧑‍🍳</div>
+            <div>
+                <button class="btn" onclick="playSound('tap'); changeOutfit('🧑‍🍳')">Classic</button>
+                <button class="btn" onclick="playSound('tap'); changeOutfit('🐱')">Cat Chef</button>
+                <button class="btn" onclick="playSound('tap'); changeOutfit('🤖')">Robo Chef</button>
+            </div>
+            <button class="btn" style="background:#fbbf24; color:#000000;" onclick="playSound('start'); goToWheel()">Start Game</button>
+        </div>
+
+        <!-- PHASE 2: MYSTERY BASKET WHEEL -->
+        <div id="screen-wheel" class="screen">
+            <div class="title">The Mystery Basket</div>
+            <div class="instructions">🎰 Spin the slot machine wheel to see what 4 mystery food elements you need to hunt for!</div>
+            <div id="wheel-display">🎰</div>
+            <button id="spin-btn" class="btn" onclick="spinWheel()">Spin Wheel</button>
+            <div id="target-basket-ui" class="basket-box" style="display:none;"></div>
+            <button id="pantry-next-btn" class="btn" style="background:#fbbf24; color:#000000; display:none;" onclick="goToPantry()">Start Stage Run</button>
+        </div>
+
+        <!-- PHASE 3: SIDE-SCROLLING MARIO GAME ENGINE -->
+        <div id="screen-pantry" class="screen">
+            <div style="width:100%; display:flex; justify-content:space-between; color:#fbbf24; font-weight:bold; font-size:14px;">
+                <span id="level-indicator">🧱 Stage: 1</span>
+                <span id="pantry-timer">⏰ Time: 25s</span>
+                <span>Items: <span id="collect-count">0</span>/4</span>
+            </div>
+            <div id="pantry-needed" style="font-size:15px; font-weight:bold; color:#fbbf24; background:#0f172a; padding:4px; border-radius:4px; width:95%;">Find: </div>
+            
+            <div id="stage-canvas">
+                <div id="kitchen-door">🚪</div>
+                <div id="player-sim">🧑‍🍳</div>
+            </div>
+
+            <div class="controls">
+                <button class="ctrl-btn" onclick="startMove(-8)">◀</button>
+                <button class="ctrl-btn" style="background:#fbbf24; color:#000000;" onclick="jump()">▲</button>
+                <button class="ctrl-btn" onclick="startMove(8)">▶</button>
+            </div>
+        </div>
+
+        <!-- PHASE 4: RESULTS -->
+        <div id="screen-results" class="screen">
+            <div class="title" id="results-title">Round Complete</div>
+            <div id="results-msg" style="text-align:center; padding: 15px; font-size:18px;"></div>
+            <button id="ad-revive-btn" class="btn" style="background:#ef4444;" onclick="watchAdRevive()">📺 Watch Ad to Restore Stock</button>
+            <button id="next-level-btn" class="btn" style="background:#fbbf24; color:#000000; display:none;" onclick="advanceLevel()">Next Level ➡️</button>
+            <button class="btn" style="background:#334155;" onclick="location.reload()">Restart Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Cleanly separated operational variables to prevent syntax crashes
+        let chosenAvatar = '🧑‍🍳';
+        let targetIngredients = [];
+        let collectedIngredients = [];
+        let pantryTimer = null;
+        let timeRemaining = 25;
+        let currentLevel = 1;
+        
+        let posX = 20;
+        let posY = 0;
+        let velX = 0;
+        let velY = 0;
+        let isGrounded = true;
+        
+        const gravity = 1.2;
+        const floorY = 260;
+        let gameLoopInterval = null;
+
+        const ingredientPool = ['🥩','🥦','🧅','🍄','🥕','🧀','🐟','🍅'];
+        const platforms = [
+            { x: 40, y: 190, w: 90 }, 
+            { x: 190, y: 190, w: 90 }, 
+            { x: 100, y: 110, w: 120 }
+        ];
+        const itemPositions = [
+            { x: 60, y: 155, item: '' }, 
+            { x: 230, y: 155, item: '' }, 
+            { x: 120, y: 75, item: '' }, 
+            { x: 180, y: 75, item: '' }, 
+            { x: 110, y: 230, item: '' }, 
+            { x: 200, y: 230, item: '' }
+        ];
+
+        function playSound(type) {
+            try {
+                let ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === 'suspended') { 
+                    ctx.resume(); 
+                }
+                let osc = ctx.createOscillator();
+                let gain = ctx.createGain();
+                osc.connect(gain); 
+                gain.connect(ctx.destination);
+                
+                if(type === 'jump') { 
+                    osc.frequency.setValueAtTime(200, ctx.currentTime); 
+                    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15); 
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime); 
+                    osc.start(); 
+                    osc.stop(ctx.currentTime + 0.15); 
+                }
+                if(type === 'pop') { 
+                    osc.frequency.setValueAtTime(400, ctx.currentTime); 
+                    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1); 
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime); 
+                    osc.start(); 
+                    osc.stop(ctx.currentTime + 0.1); 
+                }
+                if(type === 'win') {osc.frequency.setValueAtTime(523, ctx.currentTime);
+gain.gain.setValueAtTime(0.1, ctx.currentTime);
+osc.start();
+osc.stop(ctx.currentTime + 0.3);
+}
+if(type === 'tap') {
+osc.frequency.setValueAtTime(300, ctx.currentTime);
+gain.gain.setValueAtTime(0.05, ctx.currentTime);
+osc.start();
+osc.stop(ctx.currentTime + 0.05);
+}
+} catch(e){}
+}
+function changeOutfit(e) {
+chosenAvatar = e;
+document.getElementById('avatar-preview').innerText = e;
+document.getElementById('player-sim').innerText = e;
+}
+function showScreen(id) {
+document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+function goToWheel() {
+showScreen('screen-wheel');
+}
+function spinWheel() {
+document.getElementById('spin-btn').disabled = true;
+let iterations = 0;
+let interval = setInterval(() => {
+document.getElementById('wheel-display').innerText = ingredientPool[Math.floor(Math.random() * ingredientPool.length)];
+iterations++;
+if(iterations > 10) {
+clearInterval(interval);
+targetIngredients = [];
+while(targetIngredients.length < 4) {
+let item = ingredientPool[Math.floor(Math.random() * ingredientPool.length)];
+if(!targetIngredients.includes(item)) {
+targetIngredients.push(item);
+}
+}
+document.getElementById('wheel-display').style.display = 'none';
+let b = document.getElementById('target-basket-ui');
+b.style.display = 'flex';
+b.innerText = targetIngredients.join(' ');
+document.getElementById('pantry-next-btn').style.display = 'block';
+}
+}, 150);
+}
+function goToPantry() {
+showScreen('screen-pantry');
+document.getElementById('level-indicator').innerText = 🧱 Stage: ${currentLevel};
+document.getElementById('pantry-needed').innerText = "Find: " + targetIngredients.join(' ');
+collectedIngredients = [];
+document.getElementById('collect-count').innerText = 0;
+timeRemaining = Math.max(12, 30 - (currentLevel * 4));
+document.getElementById('pantry-timer').innerText = ⏰ Time: ${timeRemaining}s;
+setupPhysicsStage();
+pantryTimer = setInterval(() => {
+timeRemaining--;
+document.getElementById('pantry-timer').innerText = ⏰ Time: ${timeRemaining}s;
+if(timeRemaining <= 0) {
+clearInterval(pantryTimer);
+clearInterval(gameLoopInterval);
+endPantryRound();
+}
+}, 1000);
+}
+function setupPhysicsStage() {
+document.querySelectorAll('.platform, .pantry-item').forEach(el => el.remove());
+let canvas = document.getElementById('stage-canvas');
+platforms.forEach(p => {
+let div = document.createElement('div');
+div.className = 'platform';
+div.style.left = p.x + 'px';
+div.style.top = p.y + 'px';
+div.style.width = p.w + 'px';
+canvas.appendChild(div);
+});
+let poolShuffle = [...ingredientPool].sort(() => 0.5 - Math.random());
+itemPositions.forEach((pos, idx) => {
+pos.item = poolShuffle[idx];
+let div = document.createElement('div');
+div.className = 'pantry-item';
+div.id = item-${idx};
+div.innerText = pos.item;
+div.style.left = pos.x + 'px';
+div.style.top = pos.y + 'px';
+canvas.appendChild(div);
+});
+posX = 20;
+posY = floorY;
+velX = 0;
+velY = 0;
+isGrounded = true;
+gameLoopInterval = setInterval(updatePhysics, 30);
+}
+function startMove(speed) {
+velX = speed;
+if(speed < 0) {
+document.getElementById('player-sim').style.transform = 'scaleX(-1)';
+} else {
+document.getElementById('player-sim').style.transform = 'scaleX(1)';
+}
+}
+function jump() {
+if(isGrounded) {
+velY = -16;
+isGrounded = false;
+playSound('jump');
+}
+}
+function updatePhysics() {
+velY += gravity;
+posX += velX;
+posY += velY;
+if(posX < 0) posX = 0;
+if(posX > 320) posX = 320;
+if(posY >= floorY) {
+posY = floorY;
+velY = 0;
+isGrounded = true;
+}
+isGrounded = (posY >= floorY);
+platforms.forEach(p => {
+if(posX + 24 >= p.x && posX <= p.x + p.w) {
+if(posY + 32 >= p.y && posY + 32 - velY <= p.y + 6) {
+posY = p.y - 32;
+velY = 0;
+isGrounded = true;
+}
+}
+});
+let sim = document.getElementById('player-sim');
+sim.style.left = posX + 'px';
+sim.style.top = posY + 'px';
+velX *= 0.75;
+itemPositions.forEach((pos, idx) => {
+let div = document.getElementById(item-${idx});
+if(div && div.style.display !== 'none') {
+if(Math.abs(posX - pos.x) < 28 && Math.abs(posY - pos.y) < 28) {
+if(targetIngredients.includes(pos.item) && !collectedIngredients.includes(pos.item)) {
+playSound('pop');
+collectedIngredients.push(pos.item);
+div.style.display = 'none';
+document.getElementById('collect-count').innerText = collectedIngredients.length;
+}
+}
+}
+});
+if(posX > 290 && posY >= floorY - 20) {
+if(collectedIngredients.length === 4) {
+clearInterval(pantryTimer);
+clearInterval(gameLoopInterval);
+endPantryRound();
+}
+}
+}
+function endPantryRound() {
+showScreen('screen-results');
+let msg = document.getElementById('results-msg');
+document.getElementById('ad-revive-btn').style.display = 'none';
+document.getElementById('next-level-btn').style.display = 'none';
+if(collectedIngredients.length === 4) {
+playSound('win');
+if(currentLevel >= 5) {
+msg.innerHTML = 🏆 <b>CHEF CHAMPION!</b><br><br>You cleared every stage run of The Chopping Block!;
+} else {
+msg.innerHTML = 🎉 <b>Stage ${currentLevel} Clear!</b><br><br>You escaped through the kitchen door with your recipe intact!;
+document.getElementById('next-level-btn').style.display = 'block';
+}
+} else {
+let missedCount = 4 - collectedIngredients.length;
+msg.innerHTML = ⚠️ <b>CHOPPED!</b><br><br>You didn't reach the exit door with all 4 items before the clock struck zero.<br><br>Watch an ad to bypass the loss!;
+document.getElementById('ad-revive-btn').style.display = 'block';
+}
+}
+function advanceLevel() {
+currentLevel++;
+document.getElementById('spin-btn').disabled = false;
+document.getElementById('wheel-display').style.display = 'block';
+document.getElementById('target-basket-ui').style.display = 'none';
+document.getElementById('pantry-next-btn').style.display = 'none';
+showScreen('screen-wheel');
+}
+function watchAdRevive() {
+alert("📺 Simulating Reward Video Ad Playback... (30 seconds)");
+collectedIngredients = [...targetIngredients];
+endPantryRound();
+}
+</html> 
